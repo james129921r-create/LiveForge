@@ -1,0 +1,17 @@
+{
+  "name": "LiveForge",
+  "short_name": "LiveForge",
+  "description": "Multi-Stream Live Viewer for Kick",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

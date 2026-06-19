@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Workspace ───────────────────────────────────────────────────────────────
+// Saved workspace layouts (supplements localStorage for cross-device sync)
+
+model Workspace {
+  id            String    @id @default(cuid())
+  name          String
+  userId        String?   // for future auth
+  layout        String    // GridLayout type: '1x1', '2x2', etc.
+  slots         String    // JSON: Array<{ position: number; channelSlug: string | null }>
+  audioSettings String?   // JSON: { perStreamVolume, perStreamMuted, audioPrioritySlot }
+  chatState     String?   // JSON: { activeChatChannel, unifiedChatEnabled }
+  syncMode      String?   // JSON: { enabled, maxLatencyDiff }
+  folderId      String?
+  folder        Folder?   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  isPublic      Boolean   @default(false) // for shared layout links
+  shareId       String?   @unique // for shared layout links
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoadedAt  DateTime?
+}
+
+// ─── Folder ──────────────────────────────────────────────────────────────────
+
+model Folder {
+  id             String     @id @default(cuid())
+  name           String
+  parentFolderId String?
+  parentFolder   Folder?    @relation("FolderHierarchy", fields: [parentFolderId], references: [id], onDelete: Cascade)
+  childFolders   Folder[]   @relation("FolderHierarchy")
+  workspaces     Workspace[]
+  createdAt      DateTime   @default(now())
+}
+
+// ─── Favorite ────────────────────────────────────────────────────────────────
+
+model Favorite {
+  id          String   @id @default(cuid())
+  userId      String?
+  channelSlug String
+  addedAt     DateTime @default(now())
+
+  @@unique([userId, channelSlug])
+}
+
+// ─── Clip ────────────────────────────────────────────────────────────────────
+
+model Clip {
+  id           String   @id @default(cuid())
+  userId       String?
+  channelName  String
+  channelSlug  String
+  startTime    DateTime
+  endTime      DateTime
+  duration     Int      // seconds
+  thumbnailUrl String?
+  storagePath  String?  // for future server-side storage
+  title        String?
+  tags         String?  // JSON array
+  createdAt    DateTime @default(now())
+}
+
+// ─── Recording ───────────────────────────────────────────────────────────────
+
+model Recording {
+  id          String    @id @default(cuid())
+  userId      String?
+  channelName String
+  channelSlug String
+  hlsUrl      String
+  status      String    // 'recording' | 'paused' | 'stopped' | 'completed' | 'failed'
+  segments    String?   // JSON array of segment info
+  totalSize   Int       @default(0) // bytes
+  duration    Int       @default(0) // seconds
+  format      String    @default("webm")
+  storagePath String?
+  startedAt   DateTime  @default(now())
+  endedAt     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─── Search History ──────────────────────────────────────────────────────────
+
+model SearchHistory {
+  id          String   @id @default(cuid())
+  userId      String?
+  query       String
+  resultCount Int?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// ─── User Preferences ────────────────────────────────────────────────────────
+
+model UserPreference {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  key       String
+  value     String   // JSON-encoded value
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, key])
+}
